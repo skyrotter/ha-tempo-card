@@ -14,12 +14,11 @@ Carte Lovelace **animée** pour l'offre **Tempo d'EDF** et le signal **Ecowatt d
 
 ## Ce que montre la carte
 
-- **Aujourd'hui** : un grand disque bleu, blanc ou rouge qui respire doucement (et bat comme un cœur un jour rouge), avec un **soleil** en heures pleines et une **lune** étoilée en heures creuses.
-- **Demain** : une carte **« ? »** qui pulse tant que RTE n'a pas publié la couleur, puis **se retourne** quand elle tombe (vers 11 h).
-- **Saison** : les jours **rouges, blancs et bleus restants** (22 rouges et 43 blancs par saison, du 1er septembre au 31 août).
-- **Ecowatt** : trois pastilles J, J+1, J+2 (vert, orange, rouge) qui clignotent quand le réseau est tendu.
+- **Un compteur Linky** dont l'écran fait défiler, comme le vrai, la couleur du jour, la période (HP / HC, avec le prix si tu as renseigné tes tarifs), la couleur du lendemain et les jours rouges restants. Ses trois **voyants Tempo** sont éteints sauf celui du jour, qui brille (et pulse plus vite un jour rouge). Voyants **HP / HC** et LED de consommation qui clignote.
+- **Un boîtier « Demain »** : ses trois lampes font un **chenillard** tant que RTE n'a pas publié la couleur, puis la lampe du lendemain **s'allume** quand elle tombe (vers 11 h). Le boîtier s'entoure de rouge si demain est un jour rouge.
+- **Ecowatt** : trois barres J, J+1, J+2 (vert, orange, rouge) qui clignotent quand le réseau est tendu.
 - **Alertes** : « Demain : jour ROUGE », « Jour rouge en heures pleines », « Ecowatt : réseau électrique tendu ».
-- **Tuiles** : période en cours (HP / HC) et **prix du kWh** en cours si tu renseignes tes tarifs.
+- **Tuiles** : prix du kWh en cours et jours **rouges, blancs, bleus restants** de la saison (22 rouges et 43 blancs, du 1er septembre au 31 août).
 
 ## Installation
 
@@ -98,4 +97,4 @@ MIT. Données Tempo et Ecowatt fournies par RTE via les intégrations citées ; 
 
 ### English
 
-Animated Lovelace card for the French **EDF Tempo** tariff and the **RTE Ecowatt** grid signal: today's and tomorrow's colour (a "?" card that flips when RTE publishes it), off-peak hours with a sun / moon, remaining red / white / blue days, Ecowatt for the next 3 days, current price. Works with the [RTE Tempo](https://github.com/hekmon/rtetempo) and [RTE Ecowatt](https://github.com/kamaradclimber/rte-ecowatt) integrations or any sensor whose state contains blue / white / red. Set `language: en` for English labels.
+Animated Lovelace card for the French **EDF Tempo** tariff and the **RTE Ecowatt** grid signal: a Linky meter whose screen cycles through today's colour, peak / off-peak period and price, with a lit Tempo lamp; a "tomorrow" box whose lamps chase until RTE publishes the colour, remaining red / white / blue days, Ecowatt for the next 3 days, current price. Works with the [RTE Tempo](https://github.com/hekmon/rtetempo) and [RTE Ecowatt](https://github.com/kamaradclimber/rte-ecowatt) integrations or any sensor whose state contains blue / white / red. Set `language: en` for English labels.

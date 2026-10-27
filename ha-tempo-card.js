@@ -3,9 +3,10 @@
  * type: custom:tempo-card
  * MIT License
  */
-/* Aujourd'hui : grand disque à la couleur du jour, soleil (heures pleines) ou lune (heures creuses).
- * Demain : carte « ? » qui pulse tant que RTE n'a pas publié, puis se retourne quand la couleur tombe.
- * Saison : jours rouges, blancs et bleus restants (barres). Ecowatt : J, J+1, J+2 (vert, orange, rouge).
+/* Compteur Linky : l'écran fait défiler couleur du jour, période HP / HC (et prix), lendemain, jours rouges
+ * restants ; trois voyants Tempo dont celui du jour brille ; voyants HP / HC ; LED de consommation.
+ * Boîtier « demain » : chenillard tant que RTE n'a pas publié, puis la lampe du lendemain s'allume.
+ * Ecowatt : trois barres J, J+1, J+2 (vert, orange, rouge) qui clignotent quand le réseau est tendu.
  * Sources : intégration RTE Tempo (hekmon/rtetempo), RTE Ecowatt (kamaradclimber/rte-ecowatt),
  * ou n'importe quel capteur dont l'état contient bleu / blanc / rouge (blue / white / red, 🔵 ⚪ 🔴).
  */
@@ -19,13 +20,13 @@
       name: 'Tempo', today: "Aujourd'hui", tomorrow: 'Demain', blue: 'Bleu', white: 'Blanc', red: 'Rouge', unknown: 'Inconnu',
       hp: 'Heures pleines', hc: 'Heures creuses', period: 'Période', price: 'Prix', left: 'restants', season: 'Saison',
       ecowatt: 'Ecowatt', eco_ok: 'Normal', eco_warn: 'Tendu', eco_cut: 'Coupures', eco_alert: 'Ecowatt : réseau électrique tendu',
-      red_tomorrow: 'Demain : jour ROUGE', red_now: 'Jour rouge en heures pleines', red_left: 'Rouges', white_left: 'Blancs', blue_left: 'Bleus',
+      red_tomorrow: 'Demain : jour ROUGE', red_now: 'Jour rouge en heures pleines', red_left: 'Rouges', white_left: 'Blancs', blue_left: 'Bleus', waiting: 'En attente',
     },
     en: {
       name: 'Tempo', today: 'Today', tomorrow: 'Tomorrow', blue: 'Blue', white: 'White', red: 'Red', unknown: 'Unknown',
       hp: 'Peak hours', hc: 'Off-peak hours', period: 'Period', price: 'Price', left: 'left', season: 'Season',
       ecowatt: 'Ecowatt', eco_ok: 'Normal', eco_warn: 'Strained', eco_cut: 'Outages', eco_alert: 'Ecowatt: power grid under strain',
-      red_tomorrow: 'Tomorrow: RED day', red_now: 'Red day, peak hours', red_left: 'Red', white_left: 'White', blue_left: 'Blue',
+      red_tomorrow: 'Tomorrow: RED day', red_now: 'Red day, peak hours', red_left: 'Red', white_left: 'White', blue_left: 'Blue', waiting: 'Waiting',
     },
   };
   // jours par saison Tempo (1er septembre → 31 août) : 22 rouges, 43 blancs, le reste en bleu
@@ -34,16 +35,16 @@
 
   const CSS = `
 :host{display:block}
-ha-card{display:block;padding:10px 12px 12px;overflow:hidden;--tp-blue:#1e6fd9;--tp-white:#f4f6f8;--tp-red:#e53935;--tp-unk:#6b7480;
-  --eco-0:#2e9e5b;--eco-2:#f39c12;--eco-3:#e53935}
+ha-card{display:block;padding:10px 12px 12px;overflow:hidden;--tp-blue:#2f7bf0;--tp-white:#f5f7fa;--tp-red:#ff3b30;--tp-unk:#6b7480;
+  --eco-ok:#34c759;--eco-warn:#ff9f0a;--eco-cut:#ff3b30}
 .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .title{font-size:14px;font-weight:500;color:var(--primary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:var(--secondary-background-color);color:var(--secondary-text-color);white-space:nowrap}
-.d-blue .badge{background:color-mix(in srgb,var(--tp-blue) 25%,transparent);color:#5ea2ff}
-.d-white .badge{background:color-mix(in srgb,#cfd6dd 25%,transparent);color:var(--primary-text-color)}
-.d-red .badge{background:color-mix(in srgb,var(--tp-red) 25%,transparent);color:var(--tp-red)}
+.d-blue .badge{background:color-mix(in srgb,var(--tp-blue) 22%,transparent);color:#6aa7ff}
+.d-white .badge{background:color-mix(in srgb,#cfd6dd 22%,transparent);color:var(--primary-text-color)}
+.d-red .badge{background:color-mix(in srgb,var(--tp-red) 22%,transparent);color:var(--tp-red)}
 .alert{display:none;margin-top:4px;font-size:11px;color:var(--tp-red);font-weight:600;text-align:center}
-.alert.on{display:block;animation:tpblink 1.2s steps(2) infinite}
+.alert.on{display:block}
 svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overflow:visible;cursor:pointer}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:6px;margin-top:6px}
 .tile{box-sizing:border-box;background:var(--secondary-background-color);border-radius:10px;padding:5px 7px;min-width:0;overflow:hidden;text-align:center;cursor:pointer}
@@ -52,82 +53,104 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
 .tile .l ha-icon{--mdc-icon-size:13px;flex:none}
 .tile .v{font-size:14px;line-height:18px;font-weight:600;color:var(--primary-text-color);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .v small{font-size:10px;font-weight:400;color:var(--secondary-text-color);margin-left:2px}
-.tile.hide{display:none}
+.tile .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
 
-/* ---- illustration ---- */
-.txt{font:700 12px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle}
-.lab{fill:var(--secondary-text-color);font:500 9.5px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle}
-.small{font:600 7.5px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif)}
-/* disque du jour : respire doucement, bat comme un cœur un jour rouge */
-.disc{transform-box:fill-box;transform-origin:center;transition:fill .6s;animation:tpbreath 4s ease-in-out infinite}
-.halo{transform-box:fill-box;transform-origin:center;opacity:.35;animation:tphalo 4s ease-in-out infinite}
-.d-red .disc{animation:tpbeat 1.4s ease-in-out infinite}.d-red .halo{animation:tphalo 1.4s ease-in-out infinite;opacity:.5}
-@keyframes tpbreath{50%{transform:scale(1.03)}}
-@keyframes tpbeat{0%,40%,100%{transform:scale(1)}20%{transform:scale(1.06)}30%{transform:scale(.99)}}
-@keyframes tphalo{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.18);opacity:0}}
-/* soleil (heures pleines) ou lune (heures creuses) */
-.sun,.moon{opacity:0;transition:opacity .6s}
-.hp .sun,.hc .moon{opacity:1}
-.rays{transform-box:fill-box;transform-origin:center;animation:tpspin 12s linear infinite}
-@keyframes tpspin{to{transform:rotate(360deg)}}
-.star{animation:tptw 2s ease-in-out infinite}.star:nth-of-type(2){animation-delay:-.7s}.star:nth-of-type(3){animation-delay:-1.3s}
-@keyframes tptw{50%{opacity:.2}}
-/* carte du lendemain : « ? » qui pulse, puis retournement à la publication */
-.tmr{transform-box:fill-box;transform-origin:center}
-.tmr.flip{animation:tpflip .9s ease-in-out}
-@keyframes tpflip{0%{transform:scaleX(1)}45%{transform:scaleX(0)}55%{transform:scaleX(0)}100%{transform:scaleX(1)}}
-.t-unknown .qm{animation:tpq 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes tpq{50%{transform:scale(1.15);opacity:.6}}
-.t-red .tcard{filter:drop-shadow(0 0 6px var(--tp-red))}
-/* Ecowatt */
-.eco.l2{animation:tpblink 1.4s steps(2) infinite}.eco.l3{animation:tpblink .7s steps(2) infinite}
+/* ---- compteur : écran LCD qui fait défiler ses pages, comme un vrai Linky ---- */
+.lcd{font:700 13px/1 ui-monospace,"DejaVu Sans Mono",Menlo,monospace;fill:#a8ff9e;letter-spacing:.5px;text-anchor:middle;filter:drop-shadow(0 0 2px rgba(140,255,130,.6))}
+.lcds{font:600 6.5px/1 ui-monospace,"DejaVu Sans Mono",Menlo,monospace;fill:#7fd477;letter-spacing:1px;text-anchor:middle;opacity:.9}
+.page{opacity:0;transition:opacity .45s}
+.page.on{opacity:1}
+.d-red.hp .lcdbg{fill:#2d1714}.d-red.hp .lcd,.d-red.hp .lcds{fill:#ff8f85;filter:drop-shadow(0 0 2px rgba(255,90,80,.6))}
+/* LED de consommation : clignote comme sur le compteur */
+.conso{fill:#ffcf3a;animation:tpled 1.1s steps(2) infinite}
+/* voyants Tempo du jour : éteints sauf la couleur du jour, qui brille et respire */
+.lamp{transition:fill .5s}
+.lamp.dim{fill:#3b4249}
+.glow{opacity:0;transform-box:fill-box;transform-origin:center}
+.lit .glow{opacity:.55;animation:tpglow 2.4s ease-in-out infinite}
+.d-red .lit .glow{animation-duration:1.1s}
+@keyframes tpglow{50%{opacity:.15;transform:scale(1.35)}}
+.hpl{fill:#3b4249}.hp .hpl.p,.hc .hpl.c{fill:#ffd23a;filter:drop-shadow(0 0 2px #ffd23a)}
+.hc .hpl.c{fill:#7fc8ff;filter:drop-shadow(0 0 2px #7fc8ff)}
+/* boîtier « demain » : chenillard tant que RTE n'a pas publié, puis la lampe s'allume */
+.t-unknown .tl{animation:tpchase 1.5s steps(1) infinite}
+.t-unknown .tl:nth-of-type(2){animation-delay:.5s}.t-unknown .tl:nth-of-type(3){animation-delay:1s}
+@keyframes tpchase{0%{opacity:1}33%,100%{opacity:.18}}
+.tl.off{opacity:.18}
+.tl.on{animation:tpon .9s ease-out}
+@keyframes tpon{0%{opacity:.18}20%{opacity:1}35%{opacity:.4}55%,100%{opacity:1}}
+.t-red .tbox{filter:drop-shadow(0 0 6px rgba(255,59,48,.55))}
+.ttxt{font:700 7.5px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#4a525a;text-anchor:middle;letter-spacing:.8px}
+/* Ecowatt : barres façon signal, clignotent si le réseau est tendu */
+.eb.l2{animation:tpled 1.4s steps(2) infinite}.eb.l3{animation:tpled .7s steps(2) infinite}
+.elab{font:600 6.5px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#9aa3ad;text-anchor:middle}
 .noeco .ecog{display:none}
-.bar{transform-box:fill-box;transform-origin:0 50%;transition:transform 1s}
-@keyframes tpblink{50%{opacity:.4}}
+@keyframes tpled{50%{opacity:.35}}
 .noanim *{animation:none!important}
 `;
 
   const SVG = () => `
-<svg viewBox="0 0 300 172" role="img">
+<svg viewBox="0 0 300 200" role="img">
  <defs>
-  <radialGradient id="tpshine" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="tplinky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7ea5a"/><stop offset=".55" stop-color="#bcd535"/><stop offset="1" stop-color="#9db526"/></linearGradient>
+  <linearGradient id="tpcover" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3e7ea"/><stop offset="1" stop-color="#b9c0c6"/></linearGradient>
+  <linearGradient id="tpbox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe4e8"/></linearGradient>
+  <linearGradient id="tplcd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3b26"/><stop offset="1" stop-color="#11261a"/></linearGradient>
+  <radialGradient id="tpshine" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></radialGradient>
  </defs>
- <!-- aujourd'hui -->
- <circle class="halo" id="tphalo" cx="70" cy="66" r="46"/>
- <circle class="disc" id="tpdisc" cx="70" cy="66" r="44" stroke="rgba(0,0,0,.15)" stroke-width="1"/>
- <circle cx="70" cy="66" r="44" fill="url(#tpshine)" pointer-events="none"/>
- <text class="txt" id="tpdtxt" x="70" y="70" style="font-size:15px">--</text>
- <g class="sun" transform="translate(110 26)">
-  <circle r="13" fill="#1b2433"/>
-  <g class="rays" stroke="#ffc83d" stroke-width="1.8" stroke-linecap="round">
-   <path d="M0 -10 V-7.5 M0 10 V7.5 M-10 0 H-7.5 M10 0 H7.5 M-7 -7 L-5.3 -5.3 M7 7 L5.3 5.3 M-7 7 L-5.3 5.3 M7 -7 L5.3 -5.3"/>
-  </g>
-  <circle r="4.6" fill="#ffc83d"/>
+ <ellipse cx="150" cy="194" rx="140" ry="4" fill="#000" opacity=".2"/>
+ <!-- câbles d'arrivée -->
+ <path d="M58 168 V198 M82 168 V198 M106 168 V198" stroke="#2a2d31" stroke-width="5" stroke-linecap="round"/>
+ <path d="M70 168 V198 M94 168 V198" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/>
+ <!-- compteur Linky -->
+ <rect x="22" y="8" width="140" height="156" rx="16" fill="url(#tplinky)" stroke="#8aa01e" stroke-width="1.2"/>
+ <path d="M30 12 H154" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+ <text x="38" y="27" style="font:italic 800 10px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#5f7414">linky</text>
+ <circle class="conso" cx="146" cy="23" r="3"/>
+ <!-- écran -->
+ <rect x="34" y="34" width="116" height="46" rx="7" fill="#3a4a1c"/>
+ <rect class="lcdbg" x="38" y="38" width="108" height="38" rx="4" fill="url(#tplcd)"/>
+ <path d="M40 40 H144" stroke="#fff" stroke-width=".6" opacity=".12"/>
+ <g id="tppages"></g>
+ <!-- boutons -->
+ <circle cx="76" cy="92" r="6.5" fill="#55621f"/><circle cx="76" cy="91" r="5.5" fill="#6d7d28"/><path d="M73 91 H79" stroke="#e6efb8" stroke-width="1.4"/>
+ <circle cx="108" cy="92" r="6.5" fill="#55621f"/><circle cx="108" cy="91" r="5.5" fill="#6d7d28"/><path d="M105 91 H111 M108 88 V94" stroke="#e6efb8" stroke-width="1.4"/>
+ <!-- voyants Tempo du jour -->
+ <rect x="34" y="104" width="116" height="40" rx="8" fill="#2a3036" opacity=".92"/>
+ <g id="tplamps"></g>
+ <g style="font:600 6px var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle;fill:#c9d0d6">
+  <text x="56" y="140">BLEU</text><text x="92" y="140">BLANC</text><text x="128" y="140">ROUGE</text></g>
+ <!-- HP / HC -->
+ <rect class="hpl p" x="44" y="148" width="20" height="6" rx="3"/><rect class="hpl c" x="120" y="148" width="20" height="6" rx="3"/>
+ <g style="font:700 6px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#4d5f12"><text x="68" y="154">HP</text><text x="108" y="154">HC</text></g>
+ <!-- cache-bornes -->
+ <rect x="40" y="160" width="104" height="14" rx="4" fill="url(#tpcover)" stroke="#9aa3aa" stroke-width=".8"/>
+ <circle cx="50" cy="167" r="2" fill="#8a9298"/><circle cx="134" cy="167" r="2" fill="#8a9298"/>
+ <!-- boîtier de voyants « demain » -->
+ <g class="tbox">
+  <rect x="182" y="8" width="102" height="92" rx="10" fill="url(#tpbox)" stroke="#b9c1c8"/>
+  <path d="M190 12 H276" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <text class="ttxt" id="tptitle2" x="233" y="25">DEMAIN</text>
+  <g id="tptmr"></g>
+  <rect x="196" y="72" width="74" height="16" rx="8" fill="#eef1f4" stroke="#d3d9de"/>
+  <text id="tptmrtxt" x="233" y="83" style="font:700 8px var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle;fill:#3a4148">--</text>
  </g>
- <g class="moon" transform="translate(110 26)">
-  <circle r="13" fill="#1b2433"/>
-  <path d="M2 -7 A7.5 7.5 0 1 0 6 5 A6 6 0 1 1 2 -7 Z" fill="#dfe6f0"/>
-  <g fill="#fff"><circle class="star" cx="-7" cy="-5" r=".9"/><circle class="star" cx="5" cy="-8" r=".7"/><circle class="star" cx="-4" cy="7" r=".7"/></g>
- </g>
- <text class="lab" id="tplt" x="70" y="124">--</text>
- <!-- demain -->
- <g class="tmr" id="tptmr">
-  <rect class="tcard" id="tpcard" x="148" y="28" width="66" height="82" rx="10" stroke="rgba(0,0,0,.18)" stroke-width="1"/>
-  <rect x="148" y="28" width="66" height="82" rx="10" fill="url(#tpshine)" pointer-events="none"/>
-  <text class="txt qm" id="tptq" x="181" y="74" style="font-size:22px">?</text>
- </g>
- <text class="lab" id="tplm" x="181" y="124">--</text>
- <!-- Ecowatt J, J+1, J+2 -->
+ <!-- Ecowatt -->
  <g class="ecog">
-  <text class="lab" id="tple" x="262" y="22">Ecowatt</text>
+  <rect x="182" y="108" width="102" height="66" rx="10" fill="#1e2328" stroke="#3a4148"/>
+  <path d="M200 115 l-6 10 h5 l-3 8 l9 -12 h-5 l3 -6 z" fill="#ffd23a"/>
+  <text x="248" y="124" style="font:700 7.5px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#c9d0d6;text-anchor:middle;letter-spacing:.8px">ECOWATT</text>
   <g id="tpeco"></g>
  </g>
- <!-- saison : jours restants -->
- <g id="tpseason"></g>
 </svg>`;
 
   const COL = { blue: 'var(--tp-blue)', white: 'var(--tp-white)', red: 'var(--tp-red)', unknown: 'var(--tp-unk)' };
-  const ECO = ['var(--eco-0)', 'var(--eco-0)', 'var(--eco-2)', 'var(--eco-3)'];
+  const ECO = ['var(--eco-ok)', 'var(--eco-ok)', 'var(--eco-warn)', 'var(--eco-cut)'];
+  const lamp = (cx, cy, r, col, cls) => `<g class="${cls}">
+    <circle cx="${cx}" cy="${cy}" r="${r + 2.2}" fill="#9aa3aa"/><circle cx="${cx}" cy="${cy}" r="${r + 1}" fill="#5b636b"/>
+    <circle class="glow" cx="${cx}" cy="${cy}" r="${r + 4}" fill="${col}"/>
+    <circle class="lamp${/lit|on/.test(cls) ? '' : ' dim'}" cx="${cx}" cy="${cy}" r="${r}" fill="${col}"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#tpshine)"/></g>`;
 
   class TempoCard extends HTMLElement {
     static getConfigElement() { return document.createElement(TAG + '-editor'); }
@@ -200,6 +223,16 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
       });
     }
 
+    connectedCallback() { this._timer = setInterval(() => this._nextPage(), 2800); }
+    disconnectedCallback() { clearInterval(this._timer); }
+    // l'écran du compteur fait défiler ses pages
+    _nextPage() {
+      if (!this._built) return;
+      const pages = this._root.querySelectorAll('.page'); if (!pages.length) return;
+      this._page = ((this._page || 0) + 1) % pages.length;
+      pages.forEach((el, i) => el.classList.toggle('on', i === this._page));
+    }
+
     _build() {
       const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>${CSS}</style><ha-card>
@@ -219,47 +252,53 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
       const eco = [c.entity_ecowatt_today, c.entity_ecowatt_tomorrow, c.entity_ecowatt_day2].map((id) => (id ? this._eco(id) : undefined));
       const hasEco = c.show_ecowatt !== false && eco.some((x) => x !== undefined);
       card.className = `d-${today} t-${tmr} ${hc ? 'hc' : 'hp'}${hasEco ? '' : ' noeco'} ${c.animations === false ? 'noanim' : ''}`;
+      r.querySelector('svg').setAttribute('viewBox', hasEco ? '0 0 300 200' : '0 0 300 200');
 
       r.getElementById('tptitle').textContent = c.name || this._t('name');
       const badge = r.getElementById('tpbadge');
       badge.textContent = `${this._t(today)} · ${this._t(hc ? 'hc' : 'hp')}`; badge.style.display = c.show_status === false ? 'none' : '';
 
-      // aujourd'hui
-      const disc = r.getElementById('tpdisc'), halo = r.getElementById('tphalo'), dt = r.getElementById('tpdtxt');
-      disc.setAttribute('fill', COL[today]); halo.setAttribute('fill', COL[today]);
-      dt.textContent = this._t(today).toUpperCase(); dt.setAttribute('fill', today === 'white' ? '#1d2125' : '#fff');
-      r.getElementById('tplt').textContent = this._t('today');
-      // demain : retournement quand la couleur change (publication RTE vers 11 h)
-      const tg = r.getElementById('tptmr'), tq = r.getElementById('tptq');
-      r.getElementById('tpcard').setAttribute('fill', COL[tmr]);
-      tq.textContent = tmr === 'unknown' ? '?' : this._t(tmr).toUpperCase();
-      tq.style.fontSize = tmr === 'unknown' ? '22px' : '11px';
-      tq.setAttribute('fill', tmr === 'white' ? '#1d2125' : '#fff');
-      if (this._lastTmr !== undefined && this._lastTmr !== tmr) { tg.classList.remove('flip'); void tg.getBBox(); tg.classList.add('flip'); }
-      this._lastTmr = tmr;
-      r.getElementById('tplm').textContent = this._t('tomorrow');
+      // voyants du jour sur le compteur
+      r.getElementById('tplamps').innerHTML = ['blue', 'white', 'red'].map((k, i) => lamp(56 + i * 36, 120, 8, COL[k], k === today ? 'lit' : '')).join('');
 
-      // Ecowatt : trois pastilles J, J+1, J+2
-      r.getElementById('tpeco').innerHTML = hasEco ? eco.map((lv, i) => {
-        const y = 32 + i * 28, lbl = ['J', 'J+1', 'J+2'][i];
-        const col = lv === null || lv === undefined ? 'var(--tp-unk)' : ECO[lv];
-        const txt = lv === null || lv === undefined ? '--' : this._t(lv >= 3 ? 'eco_cut' : lv === 2 ? 'eco_warn' : 'eco_ok');
-        return `<rect class="eco l${lv ?? 'x'}" x="234" y="${y}" width="56" height="22" rx="11" fill="${col}"/>
-          <text class="small" x="241" y="${y + 14}" fill="#fff">${esc(lbl)}</text>
-          <text class="small" x="284" y="${y + 14}" fill="#fff" text-anchor="end">${esc(txt)}</text>`;
-      }).join('') : '';
-
-      // saison : jours restants par couleur
+      // prix en cours et jours restants
+      const price = Number(c[`price_${today}_${hc ? 'hc' : 'hp'}`]);
       const left = { red: this._num(c.entity_red_left), white: this._num(c.entity_white_left), blue: this._num(c.entity_blue_left) };
-      const showSeason = c.show_season !== false && Object.values(left).some((v) => !isNaN(v));
-      r.getElementById('tpseason').innerHTML = showSeason ? ['red', 'white', 'blue'].map((k, i) => {
-        const x = 10 + i * 96, v = left[k], used = isNaN(v) ? 0 : Math.max(0, Math.min(1, 1 - v / TOTAL[k]));
-        const lbl = `${this._t(k + '_left')} · ${isNaN(v) ? '--' : Math.round(v)} ${this._t('left')}`;
-        return `<text class="small" x="${x}" y="148" fill="var(--secondary-text-color)">${esc(lbl)}</text>
-          <rect x="${x}" y="154" width="88" height="7" rx="3.5" fill="rgba(127,127,127,.25)"/>
-          <rect class="bar" x="${x}" y="154" width="88" height="7" rx="3.5" fill="${COL[k]}" stroke="${k === 'white' ? '#aab4bf' : 'none'}" stroke-width=".6" style="transform:scaleX(${(1 - used).toFixed(3)})"/>`;
+      const up = (k) => this._t(k).toUpperCase();
+      // pages de l'écran : couleur du jour, période (et prix), demain, jours rouges restants
+      const pages = [
+        ['TEMPO', up(today)],
+        [this._t('period').toUpperCase(), (hc ? 'HC' : 'HP') + (isFinite(price) && price > 0 ? ` ${this._fmt(price, 4)}` : '')],
+        [this._t('tomorrow').toUpperCase(), tmr === 'unknown' ? '- - ? - -' : up(tmr)],
+      ];
+      if (!isNaN(left.red)) pages.push([this._t('red_left').toUpperCase(), `${Math.round(left.red)}/${TOTAL.red}`]);
+      const pg = r.getElementById('tppages');
+      if (this._page === undefined || this._page >= pages.length) this._page = 0;
+      pg.replaceChildren(...pages.map(([l, v], i) => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', `page${i === this._page ? ' on' : ''}`);
+        g.innerHTML = '<text class="lcds" x="92" y="50"></text><text class="lcd" x="92" y="68"></text>';
+        g.firstChild.textContent = l; g.lastChild.textContent = v;
+        return g;
+      }));
+
+      // boîtier « demain » : trois lampes, celle du lendemain s'allume à la publication
+      const changed = this._lastTmr !== undefined && this._lastTmr !== tmr;
+      r.getElementById('tptmr').innerHTML = ['blue', 'white', 'red'].map((k, i) =>
+        lamp(206 + i * 27, 49, 9, COL[k], `tl ${tmr === 'unknown' ? '' : k === tmr ? (changed ? 'on lit' : 'lit') : 'off'}`)).join('');
+      this._lastTmr = tmr;
+      r.getElementById('tptitle2').textContent = this._t('tomorrow').toUpperCase();
+      const tt = r.getElementById('tptmrtxt');
+      tt.textContent = tmr === 'unknown' ? this._t('waiting') : this._t(tmr);
+      tt.style.fill = tmr === 'red' ? '#d62d22' : tmr === 'blue' ? '#1f63c9' : '#3a4148';
+
+      // Ecowatt : trois barres façon signal (J, J+1, J+2)
+      r.getElementById('tpeco').innerHTML = hasEco ? eco.map((lv, i) => {
+        const x = 214 + i * 22, h = lv === null || lv === undefined ? 6 : [10, 10, 18, 26][lv];
+        const col = lv === null || lv === undefined ? '#4a525a' : ECO[lv];
+        return `<rect class="eb l${lv ?? 'x'}" x="${x}" y="${160 - h}" width="14" height="${h}" rx="3" fill="${col}"/>
+          <text class="elab" x="${x + 7}" y="169">${esc(['J', 'J+1', 'J+2'][i])}</text>`;
       }).join('') : '';
-      r.querySelector('svg').setAttribute('viewBox', showSeason ? '0 0 300 172' : '0 0 300 132');
 
       // alertes
       const alerts = [];
@@ -268,17 +307,20 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
       if (hasEco && eco.slice(0, 2).some((x) => x >= 2)) alerts.push(this._t('eco_alert'));
       const al = r.getElementById('tpalert'); al.textContent = alerts.join(' · '); al.classList.toggle('on', alerts.length > 0);
 
-      // tuiles : période et prix en cours (prix par couleur et par période, si renseignés)
-      const price = Number(c[`price_${today}_${hc ? 'hc' : 'hp'}`]);
+      // tuiles : prix en cours, jours restants par couleur
+      // (la période HP / HC est déjà sur le badge et les voyants du compteur)
       const tiles = [];
-      tiles.push(['mdi:clock-outline', this._t('period'), this._t(hc ? 'hc' : 'hp'), '', c.entity_offpeak]);
-      if (isFinite(price) && price > 0) tiles.push(['mdi:cash', this._t('price'), this._fmt(price, 4), `${c.currency || '€'}/kWh`, null]);
-      if (c.entity_price) { const s = this._st(c.entity_price); tiles.push(['mdi:cash', this._t('price'), s ? s.state : '--', (s && s.attributes.unit_of_measurement) || '', c.entity_price]); }
+      if (isFinite(price) && price > 0) tiles.push(['mdi:cash', this._t('price'), this._fmt(price, 4), `${c.currency || '€'}/kWh`, null, null]);
+      if (c.entity_price) { const s = this._st(c.entity_price); tiles.push(['mdi:cash', this._t('price'), s ? s.state : '--', (s && s.attributes.unit_of_measurement) || '', c.entity_price, null]); }
+      if (c.show_season !== false) ['red', 'white', 'blue'].forEach((k) => {
+        if (!isNaN(left[k])) tiles.push([null, this._t(k + '_left'), String(Math.round(left[k])), `/ ${TOTAL[k]}`, c[`entity_${k}_left`], COL[k]]);
+      });
       const tl = r.getElementById('tptiles');
       tl.style.display = c.show_tiles === false ? 'none' : '';
-      tl.replaceChildren(...tiles.map(([ic, l, v, u, id]) => {
+      tl.replaceChildren(...tiles.map(([ic, l, v, u, id, dot]) => {
         const d = document.createElement('div'); d.className = 'tile';
-        d.innerHTML = `<div class="l"><ha-icon icon="${esc(ic)}"></ha-icon><span></span></div><div class="v"><b></b><small></small></div>`;
+        d.innerHTML = `<div class="l">${ic ? `<ha-icon icon="${esc(ic)}"></ha-icon>` : '<i class="dot"></i>'}<span></span></div><div class="v"><b></b><small></small></div>`;
+        if (dot) { const i = d.querySelector('.dot'); i.style.background = dot; if (dot === COL.white) i.style.boxShadow = 'inset 0 0 0 1px #9aa3aa'; }
         d.querySelector('.l span').textContent = l; d.querySelector('.v b').textContent = v; d.querySelector('.v small').textContent = u;
         d.querySelector('.v b').style.fontWeight = 'inherit';
         if (id) d.addEventListener('click', () => this._more(id));
