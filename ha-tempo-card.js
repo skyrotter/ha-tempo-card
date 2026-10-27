@@ -86,11 +86,20 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
 .elab{font:600 6.5px/1 var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#9aa3ad;text-anchor:middle}
 .noeco .ecog{display:none}
 @keyframes tpled{50%{opacity:.35}}
+/* électricité qui arrive : impulsions à la couleur du jour, plus rapides en heures pleines */
+.pulse{fill:none;stroke:var(--pulse,#ffd23a);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 30;filter:drop-shadow(0 0 3px var(--pulse,#ffd23a));animation:tppulse .9s linear infinite}
+.hc .pulse{animation-duration:1.8s}
+@keyframes tppulse{from{stroke-dashoffset:37}to{stroke-dashoffset:0}}
+.spark{fill:var(--pulse,#ffd23a);opacity:0;filter:blur(4px);animation:tpspark .9s ease-out infinite}
+.spark{filter:blur(3px)}
+.hc .spark{animation-duration:1.8s}
+@keyframes tpspark{0%,60%{opacity:0}75%{opacity:.45}100%{opacity:0}}
+.d-blue{--pulse:#5ea2ff}.d-white{--pulse:#ffffff}.d-red{--pulse:#ff4d40}
 .noanim *{animation:none!important}
 `;
 
   const SVG = () => `
-<svg viewBox="0 0 300 200" role="img">
+<svg viewBox="0 0 300 222" role="img">
  <defs>
   <linearGradient id="tplinky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7ea5a"/><stop offset=".55" stop-color="#bcd535"/><stop offset="1" stop-color="#9db526"/></linearGradient>
   <linearGradient id="tpcover" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3e7ea"/><stop offset="1" stop-color="#b9c0c6"/></linearGradient>
@@ -98,25 +107,27 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
   <linearGradient id="tplcd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3b26"/><stop offset="1" stop-color="#11261a"/></linearGradient>
   <radialGradient id="tpshine" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></radialGradient>
  </defs>
- <ellipse cx="150" cy="194" rx="140" ry="4" fill="#000" opacity=".2"/>
+ <ellipse cx="240" cy="182" rx="60" ry="5" fill="#000" opacity=".3"/>
  <!-- câbles d'arrivée -->
- <path d="M58 168 V198 M82 168 V198 M106 168 V198" stroke="#2a2d31" stroke-width="5" stroke-linecap="round"/>
- <path d="M70 168 V198 M94 168 V198" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/>
- <!-- compteur Linky -->
+ <path d="M58 168 V222 M82 168 V222 M106 168 V222" stroke="#2a2d31" stroke-width="5" stroke-linecap="round"/>
+ <path d="M70 168 V222 M94 168 V222" stroke="#5a4636" stroke-width="5" stroke-linecap="round"/>
+ <path class="pulse" d="M58 223 V166" style="animation-delay:-0s"/><path class="pulse" d="M70 223 V166" style="animation-delay:-0.45s"/><path class="pulse" d="M82 223 V166" style="animation-delay:-0.2s"/><path class="pulse" d="M94 223 V166" style="animation-delay:-0.7s"/><path class="pulse" d="M106 223 V166" style="animation-delay:-0.35s"/>
+ <ellipse class="spark" cx="82" cy="170" rx="40" ry="6"/>
+ <rect x="31.0" y="1.7" width="140" height="156" rx="16" fill="#7d9318"/><rect x="30.0" y="2.4" width="140" height="156" rx="16" fill="#7d9318"/><rect x="29.0" y="3.1" width="140" height="156" rx="16" fill="#7d9318"/><rect x="28.0" y="3.8" width="140" height="156" rx="16" fill="#7d9318"/><rect x="27.0" y="4.5" width="140" height="156" rx="16" fill="#7d9318"/><rect x="26.0" y="5.2" width="140" height="156" rx="16" fill="#7d9318"/><rect x="25.0" y="5.9" width="140" height="156" rx="16" fill="#7d9318"/><rect x="24.0" y="6.6" width="140" height="156" rx="16" fill="#7d9318"/><rect x="23.0" y="7.3" width="140" height="156" rx="16" fill="#7d9318"/>
  <rect x="22" y="8" width="140" height="156" rx="16" fill="url(#tplinky)" stroke="#8aa01e" stroke-width="1.2"/>
  <path d="M30 12 H154" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".45"/>
  <text x="38" y="27" style="font:italic 800 10px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#5f7414">linky</text>
  <circle class="conso" cx="146" cy="23" r="3"/>
  <!-- écran -->
- <rect x="34" y="34" width="116" height="46" rx="7" fill="#3a4a1c"/>
+ <rect x="34" y="34" width="116" height="46" rx="7" fill="#3a4a1c"/><rect x="34.6" y="34.8" width="116" height="46" rx="7" fill="none" stroke="#e8f39a" stroke-width="1" opacity=".5"/>
  <rect class="lcdbg" x="38" y="38" width="108" height="38" rx="4" fill="url(#tplcd)"/>
- <path d="M40 40 H144" stroke="#fff" stroke-width=".6" opacity=".12"/>
+ <rect x="38" y="38" width="108" height="5" rx="2" fill="#000" opacity=".35"/><path d="M48 76 L60 38 H74 L62 76 Z" fill="#fff" opacity=".05"/>
  <g id="tppages"></g>
  <!-- boutons -->
- <circle cx="76" cy="92" r="6.5" fill="#55621f"/><circle cx="76" cy="91" r="5.5" fill="#6d7d28"/><path d="M73 91 H79" stroke="#e6efb8" stroke-width="1.4"/>
- <circle cx="108" cy="92" r="6.5" fill="#55621f"/><circle cx="108" cy="91" r="5.5" fill="#6d7d28"/><path d="M105 91 H111 M108 88 V94" stroke="#e6efb8" stroke-width="1.4"/>
+ <circle cx="77" cy="94" r="6.5" fill="#4a561a"/><circle cx="76" cy="92" r="6.5" fill="#55621f"/><circle cx="76" cy="91" r="5.5" fill="#6d7d28"/><path d="M73 91 H79" stroke="#e6efb8" stroke-width="1.4"/>
+ <circle cx="109" cy="94" r="6.5" fill="#4a561a"/><circle cx="108" cy="92" r="6.5" fill="#55621f"/><circle cx="108" cy="91" r="5.5" fill="#6d7d28"/><path d="M105 91 H111 M108 88 V94" stroke="#e6efb8" stroke-width="1.4"/>
  <!-- voyants Tempo du jour -->
- <rect x="34" y="104" width="116" height="40" rx="8" fill="#2a3036" opacity=".92"/>
+ <rect x="34" y="104" width="116" height="40" rx="8" fill="#2a3036" opacity=".92"/><rect x="34" y="104" width="116" height="4" rx="2" fill="#000" opacity=".4"/>
  <g id="tplamps"></g>
  <g style="font:600 6px var(--paper-font-body1_-_font-family,Roboto,sans-serif);text-anchor:middle;fill:#c9d0d6">
   <text x="56" y="140">BLEU</text><text x="92" y="140">BLANC</text><text x="128" y="140">ROUGE</text></g>
@@ -124,10 +135,11 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
  <rect class="hpl p" x="44" y="148" width="20" height="6" rx="3"/><rect class="hpl c" x="120" y="148" width="20" height="6" rx="3"/>
  <g style="font:700 6px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#4d5f12"><text x="68" y="154">HP</text><text x="108" y="154">HC</text></g>
  <!-- cache-bornes -->
- <rect x="40" y="160" width="104" height="14" rx="4" fill="url(#tpcover)" stroke="#9aa3aa" stroke-width=".8"/>
+ <rect x="45.0" y="156.5" width="104" height="14" rx="4" fill="#8d959c"/><rect x="44.0" y="157.2" width="104" height="14" rx="4" fill="#8d959c"/><rect x="43.0" y="157.9" width="104" height="14" rx="4" fill="#8d959c"/><rect x="42.0" y="158.6" width="104" height="14" rx="4" fill="#8d959c"/><rect x="41.0" y="159.3" width="104" height="14" rx="4" fill="#8d959c"/><rect x="40" y="160" width="104" height="14" rx="4" fill="url(#tpcover)" stroke="#9aa3aa" stroke-width=".8"/>
  <circle cx="50" cy="167" r="2" fill="#8a9298"/><circle cx="134" cy="167" r="2" fill="#8a9298"/>
  <!-- boîtier de voyants « demain » -->
  <g class="tbox">
+  <rect x="189.0" y="3.1" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="188.0" y="3.8" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="187.0" y="4.5" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="186.0" y="5.2" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="185.0" y="5.9" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="184.0" y="6.6" width="102" height="92" rx="10" fill="#aeb6bd"/><rect x="183.0" y="7.3" width="102" height="92" rx="10" fill="#aeb6bd"/>
   <rect x="182" y="8" width="102" height="92" rx="10" fill="url(#tpbox)" stroke="#b9c1c8"/>
   <path d="M190 12 H276" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
   <text class="ttxt" id="tptitle2" x="233" y="25">DEMAIN</text>
@@ -137,6 +149,7 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
  </g>
  <!-- Ecowatt -->
  <g class="ecog">
+  <rect x="189.0" y="103.1" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="188.0" y="103.8" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="187.0" y="104.5" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="186.0" y="105.2" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="185.0" y="105.9" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="184.0" y="106.6" width="102" height="66" rx="10" fill="#0c0f12"/><rect x="183.0" y="107.3" width="102" height="66" rx="10" fill="#0c0f12"/>
   <rect x="182" y="108" width="102" height="66" rx="10" fill="#1e2328" stroke="#3a4148"/>
   <path d="M200 115 l-6 10 h5 l-3 8 l9 -12 h-5 l3 -6 z" fill="#ffd23a"/>
   <text x="248" y="124" style="font:700 7.5px var(--paper-font-body1_-_font-family,Roboto,sans-serif);fill:#c9d0d6;text-anchor:middle;letter-spacing:.8px">ECOWATT</text>
@@ -252,7 +265,7 @@ svg{display:block;width:100%;max-width:300px;height:auto;margin:2px auto 0;overf
       const eco = [c.entity_ecowatt_today, c.entity_ecowatt_tomorrow, c.entity_ecowatt_day2].map((id) => (id ? this._eco(id) : undefined));
       const hasEco = c.show_ecowatt !== false && eco.some((x) => x !== undefined);
       card.className = `d-${today} t-${tmr} ${hc ? 'hc' : 'hp'}${hasEco ? '' : ' noeco'} ${c.animations === false ? 'noanim' : ''}`;
-      r.querySelector('svg').setAttribute('viewBox', hasEco ? '0 0 300 200' : '0 0 300 200');
+      r.querySelector('svg').setAttribute('viewBox', '0 0 300 222');
 
       r.getElementById('tptitle').textContent = c.name || this._t('name');
       const badge = r.getElementById('tpbadge');

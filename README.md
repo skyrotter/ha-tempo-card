@@ -6,15 +6,16 @@
 Carte Lovelace **animée** pour l'offre **Tempo d'EDF** et le signal **Ecowatt de RTE** : la couleur du jour, celle du lendemain, les heures creuses, les jours restants de la saison et la tension du réseau, d'un seul coup d'œil.
 
 <p align="center">
+  <img src="docs/images/tempo-anime.gif" width="400" alt="Carte Tempo animée : jour rouge, demain rouge">
   <img src="docs/images/tempo-blanc-hp.png" width="400" alt="Jour blanc, heures pleines">
-  <img src="docs/images/tempo-rouge-hc.png" width="400" alt="Jour rouge, heures creuses, demain rouge">
 </p>
 
 **▶ [Essayer la démo](https://skyrotter.github.io/ha-tempo-card/docs/demo.html)** (données simulées, sans Home Assistant)
 
 ## Ce que montre la carte
 
-- **Un compteur Linky** dont l'écran fait défiler, comme le vrai, la couleur du jour, la période (HP / HC, avec le prix si tu as renseigné tes tarifs), la couleur du lendemain et les jours rouges restants. Ses trois **voyants Tempo** sont éteints sauf celui du jour, qui brille (et pulse plus vite un jour rouge). Voyants **HP / HC** et LED de consommation qui clignote.
+- **L'électricité qui arrive** : des impulsions lumineuses remontent les câbles jusqu'au compteur, à la couleur du jour, plus vite en heures pleines qu'en heures creuses.
+- **Un compteur Linky** en relief dont l'écran fait défiler, comme le vrai, la couleur du jour, la période (HP / HC, avec le prix si tu as renseigné tes tarifs), la couleur du lendemain et les jours rouges restants. Ses trois **voyants Tempo** sont éteints sauf celui du jour, qui brille (et pulse plus vite un jour rouge). Voyants **HP / HC** et LED de consommation qui clignote.
 - **Un boîtier « Demain »** : ses trois lampes font un **chenillard** tant que RTE n'a pas publié la couleur, puis la lampe du lendemain **s'allume** quand elle tombe (vers 11 h). Le boîtier s'entoure de rouge si demain est un jour rouge.
 - **Ecowatt** : trois barres J, J+1, J+2 (vert, orange, rouge) qui clignotent quand le réseau est tendu.
 - **Alertes** : « Demain : jour ROUGE », « Jour rouge en heures pleines », « Ecowatt : réseau électrique tendu ».
