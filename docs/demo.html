@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempo Card – démo</title>
+<script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js"></script>
+<style>
+:root{--primary-text-color:#e6e6e6;--secondary-text-color:#9da3aa;--secondary-background-color:#262a30;--card-background-color:#1c1f23;--line:rgba(127,127,127,.22)}
+body.light{--primary-text-color:#1d2125;--secondary-text-color:#68707a;--secondary-background-color:#eef0f3;--card-background-color:#fff}
+body{margin:0;background:#111315;color:var(--primary-text-color);font:14px/1.45 Roboto,system-ui,sans-serif}
+body.light{background:#eef0f3}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;flex:1}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px;padding:16px;max-width:1200px;margin:0 auto}
+ha-card{display:block;background:var(--card-background-color);border-radius:12px;border:1px solid var(--line)}
+.ctl{background:var(--card-background-color);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px}
+.ctl select{background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--line);border-radius:6px;padding:4px}
+button{background:#1e6fd9;color:#fff;border:0;border-radius:6px;padding:5px 10px;cursor:pointer}
+</style>
+</head>
+<body>
+<header><h1>Tempo Card — démo (données simulées)</h1><button id="th">Clair / sombre</button></header>
+<main><div id="card"></div><div class="ctl" id="ctl"></div></main>
+<script>
+customElements.define('ha-card', class extends HTMLElement {});
+customElements.define('ha-icon', class extends HTMLElement {
+  connectedCallback() { this.innerHTML = `<iconify-icon icon="${this.getAttribute('icon') || ''}" width="14" height="14"></iconify-icon>`; }
+});
+</script>
+<script src="../ha-tempo-card.js"></script>
+<script>
+const states = {};
+const set = (id, state, attributes = {}) => { states[id] = { entity_id: id, state: String(state), attributes }; };
+set('sensor.rte_tempo_couleur_actuelle', 'Blanc');
+set('sensor.rte_tempo_prochaine_couleur', 'inconnu');
+set('binary_sensor.rte_tempo_heures_creuses', 'off');
+set('sensor.rte_tempo_cycle_jours_restants_rouge', 15, { unit_of_measurement: 'j' });
+set('sensor.rte_tempo_cycle_jours_restants_blanc', 31, { unit_of_measurement: 'j' });
+set('sensor.rte_tempo_cycle_jours_restants_bleu', 212, { unit_of_measurement: 'j' });
+set('sensor.ecowatt_level_today', 'Situation normale', { level_code: 1 });
+set('sensor.ecowatt_level_tomorrow', "Risques de coupures d'électricité", { level_code: 2 });
+set('sensor.ecowatt_level_in_2_days', 'Situation normale', { level_code: 1 });
+const card = document.createElement('tempo-card');
+card.setConfig({ ...customElements.get('tempo-card').getStubConfig({ states }),
+  price_blue_hp: 0.1609, price_blue_hc: 0.1296, price_white_hp: 0.1894, price_white_hc: 0.1486, price_red_hp: 0.7562, price_red_hc: 0.1568 });
+document.getElementById('card').append(card);
+const refresh = () => { card.hass = { states: { ...states }, language: 'fr' }; };
+const ctl = document.getElementById('ctl');
+const sel = (label, id, opts, attr) => {
+  const l = document.createElement('label'); l.textContent = label;
+  const s = document.createElement('select');
+  opts.forEach(([v, t]) => s.append(new Option(t, v, false, v === states[id].state)));
+  s.onchange = () => { set(id, s.value, attr ? attr(s.value) : states[id].attributes); refresh(); };
+  ctl.append(l, s);
+};
+const C = [['Bleu', 'Bleu'], ['Blanc', 'Blanc'], ['Rouge', 'Rouge'], ['inconnu', 'Inconnu']];
+sel("Aujourd'hui", 'sensor.rte_tempo_couleur_actuelle', C);
+sel('Demain', 'sensor.rte_tempo_prochaine_couleur', C);
+sel('Heures creuses', 'binary_sensor.rte_tempo_heures_creuses', [['off', 'Non (HP)'], ['on', 'Oui (HC)']]);
+const E = [['Situation normale', 'Normal'], ["Risques de coupures d'électricité", 'Tendu'], ["Coupures d'électricité programmées", 'Coupures']];
+const lv = (v) => ({ level_code: E.findIndex((e) => e[0] === v) + 1 });
+sel('Ecowatt J', 'sensor.ecowatt_level_today', E, lv);
+sel('Ecowatt J+1', 'sensor.ecowatt_level_tomorrow', E, lv);
+document.getElementById('th').onclick = () => document.body.classList.toggle('light');
+refresh();
+</script>
+</body>
+</html>
